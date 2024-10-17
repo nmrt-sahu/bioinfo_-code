@@ -1,4 +1,5 @@
-import pandas as pd 
+import pandas as pd
+from datetime import datetime
 
 def id_version_column(base_id, version):
     if version == 'NA':
@@ -67,7 +68,12 @@ def transform_gtf_to_df(input_df):
 
     return output_df
 
+# Get the current time
+current_time = datetime.now()
 
+# Format the time as HH:MM:SS
+formatted_time = current_time.strftime("%H:%M:%S")
+print("END time (formatted):", formatted_time)
 gtf_df = pd.read_csv("Arabidopsis_thaliana.TAIR10.56.gtf", sep='\t', header=None, comment='#', low_memory=False)
 
 # Filter rows where the 'feature' column value is "transcript"
@@ -79,12 +85,14 @@ new_transcript_df = transform_gtf_to_df(transcript_df)
 
 #print(new_transcript_df)
 
+# Get the current time
+current_time = datetime.now()
 
-# Assuming df1 and new_transcript_df are the two dataframes
-# df1: DataFrame with 'bpt' and 'chr'
-# new_transcript_df: DataFrame with 'start', 'end', 'chr', and 'gene_id'
+# Format the time as HH:MM:SS
+formatted_time = current_time.strftime("%H:%M:%S")
+print("END time (formatted):", formatted_time)
 
-# Load df1 and df2
+
 df1 = pd.read_csv("sakshi_fusion.csv", sep=',')
 
 # Convert the chr1 and chr2 columns in df1 to strings
@@ -97,11 +105,14 @@ df2 = new_transcript_df[['chr', 'gene_id', 'start', 'end']]
 # Convert the chr column in df2 to string
 df2['chr'] = df2['chr'].astype(str)
 
-# Print df1 to verify its structure
-#print("df1:")
-#print(df1.head())
 
-#print(df1['chr1'])
+# Get the current time
+current_time = datetime.now()
+
+# Format the time as HH:MM:SS
+formatted_time = current_time.strftime("%H:%M:%S")
+print("END time (formatted):", formatted_time)
+
 # Create empty columns for gene_id, start, and end in df1
 df1['gene_1'] = None
 df1['start_1'] = None
@@ -110,25 +121,28 @@ df1['gene_2'] = None
 df1['start_2'] = None
 df1['end_2'] = None
 
-# Define a function to perform the matching and assign gene_id, start, end to the dataframe
 def match_bpt_and_add_info(df1, df2, chr_col, bpt_col, gene_id_col, start_col, end_col):
+    # Iterate through df1 to match with df2
     for idx, row1 in df1.iterrows():
-        # Filter rows in df2 where 'chr' matches
+        # Filter df2 to only include rows where the chromosome matches
         df2_filtered = df2[df2['chr'] == row1[chr_col]]
         
         # Check if any rows in df2 match the bpt range
-        for _, row2 in df2_filtered.iterrows():
-            if row1[bpt_col] >= row2['start'] and row1[bpt_col] <= row2['end']:
-                # Assign gene_id, start, end from df2 to the corresponding columns in df1
-                df1.at[idx, gene_id_col] = row2['gene_id']
-                df1.at[idx, start_col] = row2['start']
-                df1.at[idx, end_col] = row2['end']
-                if row1['chr1']==row1['chr2']:
-                    df1.at[idx, 'feature'] = 'Intra'
-                else:
-                    df1.at[idx, 'feature'] = 'Inter'
-
-                break  # Exit loop after the first match
+        if not df2_filtered.empty:
+            # Use conditions to find matching rows
+            matches = df2_filtered[
+                (row1[bpt_col] >= df2_filtered['start']) &
+                (row1[bpt_col] <= df2_filtered['end'])
+            ]
+            if not matches.empty:
+                # Take the first match and assign gene_id, start, and end to df1
+                match = matches.iloc[0]
+                df1.at[idx, gene_id_col] = match['gene_id']
+                df1.at[idx, start_col] = match['start']
+                df1.at[idx, end_col] = match['end']
+                
+                # Set feature type based on the chromosome comparison
+                df1.at[idx, 'feature'] = 'Intrachromosomal' if row1['chr1'] == row1['chr2'] else 'Interchromosomal'
 
 # Match chr1 and bpt1 from df1 with df2
 match_bpt_and_add_info(df1, df2, 'chr1', 'bpt1', 'gene_1', 'start_1', 'end_1')
@@ -136,7 +150,16 @@ match_bpt_and_add_info(df1, df2, 'chr1', 'bpt1', 'gene_1', 'start_1', 'end_1')
 # Match chr2 and bpt2 from df1 with df2
 match_bpt_and_add_info(df1, df2, 'chr2', 'bpt2', 'gene_2', 'start_2', 'end_2')
 
-# Print the updated df1
-print("Updated df1:")
-print(df1)
-df1.to_csv('sakshi_fusion_updated.csv',sep='\t')
+
+# Save the updated DataFrame to a CSV file
+df1.to_csv('sakshi_fusion_updated.csv', sep='\t', index=False)
+
+
+from datetime import datetime
+
+# Get the current time
+current_time = datetime.now()
+
+# Format the time as HH:MM:SS
+formatted_time = current_time.strftime("%H:%M:%S")
+print("END time (formatted):", formatted_time)
